@@ -18,17 +18,40 @@ namespace RG_Potter_API
         {
             if (_reset) context.Database.EnsureDeleted();
 
-            if (context.Database.EnsureCreated()) return;
+            if (!context.Database.EnsureCreated()) return;
 
-            var users = new[]
+
+            var houses = new[]
             {
-                new User
+                new House
                 {
-
+                    Id = "gryffindor",
+                    Name = "Grifinória"
+                },
+                new House
+                {
+                    Id = "hufflepuff",
+                    Name = "Lufa-Lufa"
+                },
+                new House
+                {
+                    Id = "slytherin",
+                    Name = "Sonserina"
+                },
+                new House
+                {
+                    Id = "ravenclaw",
+                    Name = "Corvinal"
                 }
             };
 
+            foreach (var house in houses) context.Houses.Add(house);
+
+
+            var users = new User[0];
+
             foreach (var user in users) context.Users.Add(user);
+
 
             context.SaveChanges();
         }
