@@ -17,7 +17,7 @@ namespace RG_Potter_API.DB
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
-            
+            modelBuilder.Entity<User>().ToTable("User");
         }
     }
 }
