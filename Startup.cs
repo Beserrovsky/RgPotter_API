@@ -10,7 +10,7 @@ using RG_Potter_API.DB;
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Threading.Tasks;
+using System.Threading.Tasks; 
 
 namespace RG_Potter_API
 {
@@ -27,7 +27,8 @@ namespace RG_Potter_API
         // This method gets called by the runtime. Use this method to add services to the container.
         public void ConfigureServices(IServiceCollection services)
         {
-            services.AddControllers();
+            services.AddControllers().AddNewtonsoftJson(options =>
+                options.SerializerSettings.ReferenceLoopHandling = Newtonsoft.Json.ReferenceLoopHandling.Ignore);
 
             services.AddDbContext<PotterContext>(options =>
                 options.UseMySQL(Configuration.GetConnectionString("DefaultConnection")));
