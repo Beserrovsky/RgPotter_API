@@ -15,9 +15,19 @@ namespace RG_Potter_API.DB
 
         public DbSet<User> Users { get; set; }
 
+        public DbSet<House> Houses { get; set; }
+
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
-            modelBuilder.Entity<User>().ToTable("User");
+            modelBuilder.Entity<User>() // House 1:N User
+                .ToTable("User")
+                .HasOne(user => user.House)
+                .WithMany(house => house.Users)
+                .HasForeignKey(user => user.House_Id)
+                .IsRequired();
+
+            modelBuilder.Entity<House>()
+                .ToTable("House");
         }
     }
 }
