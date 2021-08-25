@@ -47,11 +47,20 @@ namespace RG_Potter_API
 
             foreach (var house in houses) context.Houses.Add(house);
 
+#if DEBUG
 
-            var users = new User[0];
+            var users = new[] 
+            { 
+                new User
+                {
+                    Name = "Felipe Beserra",
+                    House_Id = "gryffindor",
+                }
+            };
 
             foreach (var user in users) context.Users.Add(user);
 
+#endif
 
             context.SaveChanges();
         }
