@@ -13,6 +13,7 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.IdentityModel.Tokens;
 using RG_Potter_API.DB;
 using RG_Potter_API.Models;
+using RG_Potter_API.Models.DTOs;
 using RG_Potter_API.Services;
 
 namespace RG_Potter_API.Controllers
