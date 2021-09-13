@@ -15,7 +15,9 @@ namespace RG_Potter_API.Models
 
         public House House { get; set; }
 
-        public char Pronoum { get; set; }
+        public string Pronoum { get; set; }
+
+        public Gender Gender { get; set; }
 
         public string Email { get; set; }
 
