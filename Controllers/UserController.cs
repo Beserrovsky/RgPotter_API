@@ -77,8 +77,17 @@ namespace RG_Potter_API.Controllers
         [HttpPost]
         public async Task<ActionResult<User>> PostUser(User user)
         {
+            if (await _context.Users.FindAsync(user.Email) != null) return Conflict();
+            if (!_context.Houses.Any(h => h.Id == user.House_Id)) ModelState.AddModelError(nameof(user.House_Id), "House ID invalid!");
+            if (!_context.Genders.Any(g => g.Pronoum == user.Pronoum)) ModelState.AddModelError(nameof(user.Pronoum), "Pronoum invalid!");
 
+            if (!ModelState.IsValid) return ValidationProblem();
 
+            user.Password = _hash.Of(user.Password);
+
+            _context.Add(user);
+            _context.SaveChanges();
+            
             return Created(nameof(GetUser), user);
         }
 
