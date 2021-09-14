@@ -94,19 +94,17 @@ namespace RG_Potter_API.Controllers
         // PUT: api/User
         [Authorize]
         [HttpPatch]
-        public async Task<ActionResult<User>> PatchUser(User user)
+        public Task<ActionResult<User>> PatchUser(User user)
         {
-
-            return Ok();
+            throw new NotImplementedException();
         }
 
         // DELETE: api/User
         [Authorize]
         [HttpDelete]
-        public async Task<ActionResult<User>> DeleteUser(User user)
+        public Task<ActionResult<User>> DeleteUser(User user)
         {
-
-            return Ok();
+            throw new NotImplementedException();
         }
 
         async private Task<User> CheckCredentials(Credentials credentials)
