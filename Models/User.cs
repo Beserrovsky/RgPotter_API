@@ -11,9 +11,10 @@ namespace RG_Potter_API.Models
 {
     public class User
     {
+        private string email;
         [Key]
         [Required]
-        public string Email { get; set; }
+        public string Email { get => email; set { email = value.ToLower(); } }
 
         [Required]
         [StringLength(75, MinimumLength = 5)]
