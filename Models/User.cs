@@ -1,4 +1,7 @@
-﻿using System;
+﻿using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Mvc.ModelBinding;
+using RG_Potter_API.DB;
+using System;
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
 using System.Linq;
@@ -32,5 +35,11 @@ namespace RG_Potter_API.Models
         public int LumusSuccesses { get; set; } = 0;
 
         public int LumusFails { get; set; } = 0;
+
+        public void ValidateForeignKeys(ModelStateDictionary modelState, PotterContext context) 
+        {
+            if (!context.Houses.Any(h => h.Id == House_Id)) modelState.AddModelError(nameof(House_Id), "House ID invalid!");
+            if (!context.Genders.Any(g => g.Pronoum == Pronoum)) modelState.AddModelError(nameof(Pronoum), "Pronoum invalid!");
+        }
     }
 }
