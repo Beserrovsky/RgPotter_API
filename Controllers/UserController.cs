@@ -39,7 +39,11 @@ namespace RG_Potter_API.Controllers
         [HttpGet("List")]
         public async Task<ActionResult<IEnumerable<User>>> List()
         {
-            var users = _context.Users.Include(c => c.House).AsNoTracking();
+            var users = _context.Users
+                            .Include(u => u.House)
+                            .Include(u => u.Gender)
+                            .AsNoTracking();
+
             return await users.ToListAsync();
         }
 
@@ -64,9 +68,12 @@ namespace RG_Potter_API.Controllers
         public async Task<ActionResult<User>> GetUser()
         {
             var email = User.FindFirst(ClaimTypes.NameIdentifier).Value;
-            if (email == null) return Unauthorized();
 
-            User user = await _context.Users.FindAsync(email);
+            User user = await _context.Users
+                                    .Include(u=> u.House)
+                                    .Include(u => u.Gender)
+                                    .FirstOrDefaultAsync(u=> u.Email == email);
+
             if (user == null) return NotFound();
 
             return user;
@@ -75,28 +82,55 @@ namespace RG_Potter_API.Controllers
         // POST: api/User
         [AllowAnonymous]
         [HttpPost]
-        public async Task<ActionResult<User>> PostUser(User user)
+        public ActionResult<User> PostUser(User user)
         {
-            if (await _context.Users.FindAsync(user.Email) != null) return Conflict();
-            if (!_context.Houses.Any(h => h.Id == user.House_Id)) ModelState.AddModelError(nameof(user.House_Id), "House ID invalid!");
-            if (!_context.Genders.Any(g => g.Pronoum == user.Pronoum)) ModelState.AddModelError(nameof(user.Pronoum), "Pronoum invalid!");
+            if (UserExists(user.Email)) return Conflict();
 
+            user.ValidateForeignKeys(ModelState, _context);
             if (!ModelState.IsValid) return ValidationProblem();
 
             user.Password = _hash.Of(user.Password);
 
             _context.Add(user);
             _context.SaveChanges();
-            
-            return Created(nameof(GetUser), user);
+
+            return CreatedAtAction(nameof(GetUser), user);
         }
 
-        // PUT: api/User
+        // PATCH: api/User
         [Authorize]
         [HttpPatch]
-        public Task<ActionResult<User>> PatchUser(User user)
+        public async Task<ActionResult<User>> PatchUser(string id, User user)
         {
-            throw new NotImplementedException();
+            if (id != user.Email) BadRequest();
+
+            var email = User.FindFirst(ClaimTypes.NameIdentifier).Value;
+            if (email != user.Email) return Unauthorized();
+
+            user.ValidateForeignKeys(ModelState, _context);
+            if (!ModelState.IsValid) return ValidationProblem();
+
+            user.Password = _hash.Of(user.Password);
+
+            _context.Entry(user).State = EntityState.Modified;
+
+            try
+            {
+                await _context.SaveChangesAsync();
+            }
+            catch (DbUpdateConcurrencyException)
+            {
+                if (!UserExists(id))
+                {
+                    return NotFound();
+                }
+                else
+                {
+                    throw;
+                }
+            }
+
+            return user;
         }
 
         // DELETE: api/User
@@ -110,6 +144,11 @@ namespace RG_Potter_API.Controllers
         async private Task<User> CheckCredentials(Credentials credentials)
         {
             return await _context.Users.Include(c => c.House).FirstOrDefaultAsync(i => i.Email == credentials.Email && i.Password == _hash.Of(credentials.Password));
+        }
+
+        private bool UserExists(string id)
+        {
+            return _context.Users.Any(e => e.Email == id);
         }
     }
 }
