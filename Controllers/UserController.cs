@@ -136,9 +136,18 @@ namespace RG_Potter_API.Controllers
         // DELETE: api/User
         [Authorize]
         [HttpDelete]
-        public Task<ActionResult<User>> DeleteUser(User user)
+        public async Task<ActionResult<User>> DeleteUser()
         {
-            throw new NotImplementedException();
+            var email = User.FindFirst(ClaimTypes.NameIdentifier).Value;
+            if (email == null) return Unauthorized();
+
+            User u = await _context.Users.FirstOrDefaultAsync(u => u.Email == email);
+            if (u == null) return NotFound();
+            
+            _context.Users.Remove(u);
+            await _context.SaveChangesAsync();
+
+            return Ok();
         }
 
         async private Task<User> CheckCredentials(Credentials credentials)
