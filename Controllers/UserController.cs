@@ -105,15 +105,29 @@ namespace RG_Potter_API.Controllers
 
         // POST: api/User/Auth
         [AllowAnonymous]
-        [HttpPost]
+        [HttpPost("Auth")]
         public async Task<ActionResult<string>> Auth(Credentials credentials)
         {
             User user = await Login(credentials);
-            if(user == null) return Unauthorized();
+            if (user == null) return Unauthorized();
 
             string token = GenJWT(user.Id);
 
             return token;
+        }
+
+        public struct JwtDTO 
+        {
+            public string jwt;
+        }
+
+        // POST: api/User/Auth
+        [AllowAnonymous]
+        [HttpPost("ValidateAuth")]
+        public ActionResult<bool> ValidateAuth(JwtDTO jwtDto)
+        {
+            if (jwtDto.jwt == null) return BadRequest();
+            return ValidateJWT(jwtDto.jwt);
         }
 
         // DELETE: api/User/5
@@ -160,11 +174,34 @@ namespace RG_Potter_API.Controllers
                 issuer,
                 issuer,
                 claims,
-                expires: DateTime.Now.AddMinutes(120),
+                expires: null,
                 signingCredentials: credentials
             );
 
             return new JwtSecurityTokenHandler().WriteToken(token);
+        }
+
+        private bool ValidateJWT(string token)
+        {
+            var validationParameters = new TokenValidationParameters()
+            {
+                ValidateLifetime = false, 
+                ValidateAudience = true, 
+                ValidateIssuer = true,   
+                ValidIssuer = _configuration["Jwt:Issuer"],
+                ValidAudience = _configuration["Jwt:Issuer"],
+                IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_configuration["Jwt:Key"]))
+            };
+
+            try
+            {
+                new JwtSecurityTokenHandler().ValidateToken(token, validationParameters, out SecurityToken validatedToken);
+                return true;
+            }
+            catch
+            {
+                return false;
+            }
         }
     }
 }

@@ -58,8 +58,6 @@ namespace RG_Potter_API
 
             foreach (var gender in genders) context.Genders.Add(gender);
 
-            #if DEBUG 
-
             var users = new[] 
             { 
                 new User
@@ -67,14 +65,12 @@ namespace RG_Potter_API
                     Name = "Felipe Beserra",
                     House_Id = "gryffindor",
                     Pronoum = "o",
-                    Email = "felipe@teste.com",
-                    Password = _hash.Of("Legal!")
+                    Email = "felipe@adm.com",
+                    Password = _hash.Of("SecurePassword")
                 }
             };
 
             foreach (var user in users) context.Users.Add(user);
-
-            #endif
 
             context.SaveChanges();
         }
