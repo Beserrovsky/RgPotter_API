@@ -14,5 +14,17 @@ namespace RG_Potter_API.Models
         public string House_Id { get; set; }
 
         public House House { get; set; }
+
+        public string Pronoum { get; set; }
+
+        public Gender Gender { get; set; }
+
+        public string Email { get; set; }
+
+        public string Password { get; set; }
+
+        public int LumusSuccesses { get; set; }
+
+        public int LumusFails { get; set; }
     }
 }

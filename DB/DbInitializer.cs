@@ -1,6 +1,7 @@
 ﻿using Microsoft.Extensions.Configuration;
 using RG_Potter_API.DB;
 using RG_Potter_API.Models;
+using RG_Potter_API.Services;
 using System;
 
 namespace RG_Potter_API
@@ -8,10 +9,12 @@ namespace RG_Potter_API
     internal class DbInitializer
     {
         private readonly bool _reset;
+        private readonly IPasswordHash _hash;
 
-        public DbInitializer(IConfiguration configuration)
+        public DbInitializer(IConfiguration configuration, IPasswordHash hash)
         {
             _reset = bool.Parse(configuration["ResetDB"] ?? "true");
+            _hash = hash;
         }
 
         internal void Initialize(PotterContext context)
@@ -47,7 +50,15 @@ namespace RG_Potter_API
 
             foreach (var house in houses) context.Houses.Add(house);
 
-#if DEBUG
+            var genders = new[]
+            {
+                new Gender { Pronoum = "a" },
+                new Gender { Pronoum = "o" }
+            };
+
+            foreach (var gender in genders) context.Genders.Add(gender);
+
+            #if DEBUG 
 
             var users = new[] 
             { 
@@ -55,12 +66,15 @@ namespace RG_Potter_API
                 {
                     Name = "Felipe Beserra",
                     House_Id = "gryffindor",
+                    Pronoum = "o",
+                    Email = "felipe@teste.com",
+                    Password = _hash.Of("Legal!")
                 }
             };
 
             foreach (var user in users) context.Users.Add(user);
 
-#endif
+            #endif
 
             context.SaveChanges();
         }

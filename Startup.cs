@@ -1,3 +1,4 @@
+using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc;
@@ -6,10 +7,13 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
+using Microsoft.IdentityModel.Tokens;
 using RG_Potter_API.DB;
+using RG_Potter_API.Services;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Text;
 using System.Threading.Tasks; 
 
 namespace RG_Potter_API
@@ -27,13 +31,76 @@ namespace RG_Potter_API
         // This method gets called by the runtime. Use this method to add services to the container.
         public void ConfigureServices(IServiceCollection services)
         {
-            services.AddControllers().AddNewtonsoftJson(options =>
-                options.SerializerSettings.ReferenceLoopHandling = Newtonsoft.Json.ReferenceLoopHandling.Ignore);
 
+            ConfigureCors(services);
+
+            ConfigureControllers(services);
+
+            ConfigureEF(services);
+
+            ConfigureConfiguration(services);
+
+            ConfigureHash(services);
+
+            ConfigureJWT(services);
+        }
+
+        private void ConfigureCors(IServiceCollection services)
+        {
+            var allowedUrls = Configuration.GetSection("AllowedCorsUrls")
+                                  ?.Get<List<string>>()
+                                  ?.ToArray();
+
+            services.AddCors(options => options.AddPolicy("ApiCorsPolicy",
+                builder => { builder.WithOrigins(allowedUrls).AllowAnyMethod().AllowAnyHeader(); }));
+        }
+
+        private void ConfigureControllers(IServiceCollection services) 
+        {
+            services.AddControllers().AddNewtonsoftJson(options =>
+                    options.SerializerSettings.ReferenceLoopHandling = Newtonsoft.Json.ReferenceLoopHandling.Ignore);
+        }
+
+        private void ConfigureEF(IServiceCollection services) 
+        {
             services.AddDbContext<PotterContext>(options =>
                 options.UseMySQL(Configuration.GetConnectionString("DefaultConnection")));
+        }
 
+        private void ConfigureConfiguration(IServiceCollection services) 
+        {
             services.AddSingleton(Configuration);
+        }
+
+        private void ConfigureHash(IServiceCollection services)
+        {
+            services.AddScoped<IPasswordHash, Sha256PasswordHash>();
+        }
+
+        private void ConfigureJWT(IServiceCollection services) 
+        {
+            var key = Configuration["Jwt:Key"];
+
+            var issuer = Configuration["Jwt:Issuer"];
+
+            services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
+                .AddJwtBearer(
+                    options =>
+                    {
+                        options.TokenValidationParameters = new TokenValidationParameters
+                        {
+                            ValidateIssuer = true,
+                            ValidateAudience = true,
+                            ValidateLifetime = true,
+                            ValidateIssuerSigningKey = true,
+                            ValidIssuer = issuer,
+                            ValidAudience = issuer,
+                            IssuerSigningKey = new SymmetricSecurityKey(
+                                Encoding.UTF8.GetBytes(key)
+                            )
+                        };
+                    }
+                );
         }
 
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.

@@ -17,17 +17,26 @@ namespace RG_Potter_API.DB
 
         public DbSet<House> Houses { get; set; }
 
+        public DbSet<Gender> Genders { get; set; }
+
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
-            modelBuilder.Entity<User>() // House 1:N User
-                .ToTable("User")
-                .HasOne(user => user.House)
-                .WithMany(house => house.Users)
+            modelBuilder.Entity<User>()
+                .ToTable("User");
+
+            modelBuilder.Entity<House>() // House 1:N User
+                .ToTable("House")
+                .HasMany(house => house.Users)
+                .WithOne(user => user.House)
                 .HasForeignKey(user => user.House_Id)
                 .IsRequired();
 
-            modelBuilder.Entity<House>()
-                .ToTable("House");
+            modelBuilder.Entity<Gender>() // Gender N:1 User
+                .ToTable("Gender")
+                .HasMany(house => house.Users)
+                .WithOne(gender => gender.Gender)
+                .HasForeignKey(user => user.Pronoum)
+                .IsRequired();
         }
     }
 }

@@ -4,6 +4,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using RG_Potter_API.DB;
+using RG_Potter_API.Services;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -34,7 +35,9 @@ namespace RG_Potter_API
 
                     var configuration = services.GetRequiredService<IConfiguration>();
 
-                    var initializer = new DbInitializer(configuration);
+                    var passwordHash = services.GetRequiredService<IPasswordHash>();
+
+                    var initializer = new DbInitializer(configuration, passwordHash);
 
                     initializer.Initialize(context);
                 }
