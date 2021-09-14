@@ -45,6 +45,19 @@ namespace RG_Potter_API.Controllers
 
 #endif
 
+        // POST: api/User/Login
+        [AllowAnonymous]
+        [HttpPost("Login")]
+        public async Task<ActionResult<string>> Login(Credentials credentials)
+        {
+            if (!ModelState.IsValid) return BadRequest();
+            
+            User user = await CheckCredentials(credentials);
+            if (user == null) return Unauthorized();
+
+            return new TokenService(_configuration).GenerateToken(user);
+        }
+
         // GET: api/User
         [Authorize]
         [HttpGet]
@@ -59,15 +72,39 @@ namespace RG_Potter_API.Controllers
             return user;
         }
 
-        // POST: api/User/Login
+        // POST: api/User
         [AllowAnonymous]
-        [HttpPost("Login")]
-        public async Task<ActionResult<string>> Login(Credentials credentials)
+        [HttpPost]
+        public async Task<ActionResult<User>> PostUser(User user)
         {
-            User user = await CheckCredentials(credentials);
-            if (user == null) return Unauthorized();
+            if (await _context.Users.FindAsync(user.Email) != null) return Conflict();
+            if (!_context.Houses.Any(h => h.Id == user.House_Id)) ModelState.AddModelError(nameof(user.House_Id), "House ID invalid!");
+            if (!_context.Genders.Any(g => g.Pronoum == user.Pronoum)) ModelState.AddModelError(nameof(user.Pronoum), "Pronoum invalid!");
 
-            return new TokenService(_configuration).GenerateToken(user);
+            if (!ModelState.IsValid) return ValidationProblem();
+
+            user.Password = _hash.Of(user.Password);
+
+            _context.Add(user);
+            _context.SaveChanges();
+            
+            return Created(nameof(GetUser), user);
+        }
+
+        // PUT: api/User
+        [Authorize]
+        [HttpPatch]
+        public Task<ActionResult<User>> PatchUser(User user)
+        {
+            throw new NotImplementedException();
+        }
+
+        // DELETE: api/User
+        [Authorize]
+        [HttpDelete]
+        public Task<ActionResult<User>> DeleteUser(User user)
+        {
+            throw new NotImplementedException();
         }
 
         async private Task<User> CheckCredentials(Credentials credentials)
