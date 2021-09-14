@@ -23,21 +23,21 @@ namespace RG_Potter_API.Controllers
     public class UserController : ControllerBase
     {
         private readonly PotterContext _context;
-        private readonly IConfiguration _configuration;
         private readonly IPasswordHash _hash;
+        private readonly IConfiguration _configuration;
 
-        public UserController(PotterContext context, IConfiguration configuration, IPasswordHash hash)
+        public UserController(PotterContext context, IPasswordHash hash, IConfiguration configuration)
         {
             _context = context;
-            _configuration = configuration;
             _hash = hash;
+            _configuration = configuration;
         }
 
 #if DEBUG
 
-        // GET: api/User
-        [HttpGet]
-        public async Task<ActionResult<IEnumerable<User>>> GetUsers()
+        // GET: api/User/List
+        [HttpGet("List")]
+        public async Task<ActionResult<IEnumerable<User>>> List()
         {
             var users = _context.Users.Include(c => c.House).AsNoTracking();
             return await users.ToListAsync();
@@ -45,163 +45,34 @@ namespace RG_Potter_API.Controllers
 
 #endif
 
-        // GET: api/User/5
+        // GET: api/User
         [Authorize]
-        [HttpGet("{id}")]
-        public async Task<ActionResult<User>> GetUser(Guid id)
+        [HttpGet]
+        public async Task<ActionResult<User>> GetUser()
         {
-            var user = _context.Users.Include(c => c.House).FirstOrDefaultAsync(i => i.Id == id);
+            var email = User.FindFirst(ClaimTypes.NameIdentifier).Value;
+            if (email == null) return Unauthorized();
 
-            if (user == null)
-            {
-                return NotFound();
-            }
-
-            return await user;
-        }
-
-        // PUT: api/User/5
-        [Authorize]
-        [HttpPut("{id}")]
-        public async Task<IActionResult> PutUser(Guid id, User user)
-        {
-            if (id != user.Id)
-            {
-                return BadRequest();
-            }
-
-            _context.Entry(user).State = EntityState.Modified;
-
-            try
-            {
-                await _context.SaveChangesAsync();
-            }
-            catch (DbUpdateConcurrencyException)
-            {
-                if (!UserExists(id))
-                {
-                    return NotFound();
-                }
-                else
-                {
-                    throw;
-                }
-            }
-
-            return NoContent();
-        }
-
-        // POST: api/User
-        [Authorize]
-        [HttpPost]
-        public async Task<ActionResult<User>> PostUser(User user)
-        {
-            _context.Users.Add(user);
-            await _context.SaveChangesAsync();
-
-            return CreatedAtAction("GetUser", new { id = user.Id }, user);
-        }
-
-
-        // POST: api/User/Auth
-        [AllowAnonymous]
-        [HttpPost("Auth")]
-        public async Task<ActionResult<string>> Auth(Credentials credentials)
-        {
-            User user = await Login(credentials);
-            if (user == null) return Unauthorized();
-
-            string token = GenJWT(user.Id);
-
-            return token;
-        }
-
-        public struct JwtDTO 
-        {
-            public string jwt;
-        }
-
-        // POST: api/User/Auth
-        [AllowAnonymous]
-        [HttpPost("ValidateAuth")]
-        public ActionResult<bool> ValidateAuth(JwtDTO jwtDto)
-        {
-            if (jwtDto.jwt == null) return BadRequest();
-            return ValidateJWT(jwtDto.jwt);
-        }
-
-        // DELETE: api/User/5
-        [Authorize]
-        [HttpDelete("{id}")]
-        public async Task<ActionResult<User>> DeleteUser(Guid id)
-        {
-            var user = await _context.Users.FindAsync(id);
-            if (user == null)
-            {
-                return NotFound();
-            }
-
-            _context.Users.Remove(user);
-            await _context.SaveChangesAsync();
+            User user = await _context.Users.FindAsync(email);
+            if (user == null) return NotFound();
 
             return user;
         }
 
-        private bool UserExists(Guid id)
+        // POST: api/User/Login
+        [AllowAnonymous]
+        [HttpPost("Login")]
+        public async Task<ActionResult<string>> Login(Credentials credentials)
         {
-            return _context.Users.Any(e => e.Id == id);
+            User user = await CheckCredentials(credentials);
+            if (user == null) return Unauthorized();
+
+            return new TokenService(_configuration).GenerateToken(user);
         }
 
-        async private Task<User> Login(Credentials credentials)
+        async private Task<User> CheckCredentials(Credentials credentials)
         {
             return await _context.Users.Include(c => c.House).FirstOrDefaultAsync(i => i.Email == credentials.Email && i.Password == _hash.Of(credentials.Password));
-        }
-
-        private string GenJWT(Guid userID)
-        {
-            var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_configuration["Jwt:Key"]));
-
-            var issuer = _configuration["Jwt:Issuer"];
-
-            var credentials = new SigningCredentials(key, SecurityAlgorithms.HmacSha256);
-
-            var claims = new[]
-            {
-                new Claim(JwtRegisteredClaimNames.Sid, userID.ToString())
-            };
-
-            var token = new JwtSecurityToken(
-                issuer,
-                issuer,
-                claims,
-                expires: null,
-                signingCredentials: credentials
-            );
-
-            return new JwtSecurityTokenHandler().WriteToken(token);
-        }
-
-        private bool ValidateJWT(string token)
-        {
-            var validationParameters = new TokenValidationParameters()
-            {
-                ValidateLifetime = false, 
-                ValidateAudience = true, 
-                ValidateIssuer = true,   
-                ValidIssuer = _configuration["Jwt:Issuer"],
-                ValidAudience = _configuration["Jwt:Issuer"],
-                IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_configuration["Jwt:Key"]))
-            };
-
-            try
-            {
-                new JwtSecurityTokenHandler().ValidateToken(token, validationParameters, out SecurityToken validatedToken);
-                return true;
-            }
-            catch
-            {
-                return false;
-            }
         }
     }
 }
