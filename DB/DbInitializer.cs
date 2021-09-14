@@ -45,6 +45,11 @@ namespace RG_Potter_API
                 {
                     Id = "ravenclaw",
                     Name = "Corvinal"
+                },
+                new House
+                {
+                    Id = "none",
+                    Name = "Sem casa"
                 }
             };
 
