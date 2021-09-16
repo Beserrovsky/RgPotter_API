@@ -8,6 +8,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using Microsoft.IdentityModel.Tokens;
+using Microsoft.OpenApi.Models;
 using RG_Potter_API.DB;
 using RG_Potter_API.Services;
 using System;
@@ -28,13 +29,14 @@ namespace RG_Potter_API
 
         public IConfiguration Configuration { get; }
 
-        // This method gets called by the runtime. Use this method to add services to the container.
         public void ConfigureServices(IServiceCollection services)
         {
 
             ConfigureCors(services);
 
             ConfigureControllers(services);
+
+            ConfigureSwagger(services);
 
             ConfigureEF(services);
 
@@ -59,6 +61,25 @@ namespace RG_Potter_API
         {
             services.AddControllers().AddNewtonsoftJson(options =>
                     options.SerializerSettings.ReferenceLoopHandling = Newtonsoft.Json.ReferenceLoopHandling.Ignore);
+        }
+
+        private void ConfigureSwagger(IServiceCollection services)
+        {
+            services.AddSwaggerGen(c =>
+            {
+                c.SwaggerDoc("v1", new OpenApiInfo
+                {
+                    Title = "RgPotter API",
+                    Version = "v1",
+                    Description = "A REST API mainly for an Android App",
+                    Contact = new OpenApiContact
+                    {
+                        Name = "Beserrovsky",
+                        Email = string.Empty,
+                        Url = new Uri("https://github.com/Beserrovsky"),
+                    },
+                });
+            });
         }
 
         private void ConfigureEF(IServiceCollection services) 
@@ -110,7 +131,18 @@ namespace RG_Potter_API
                 app.UseDeveloperExceptionPage();
             }
 
+            app.UseSwagger();
+
+            app.UseSwaggerUI(c =>
+            {
+                c.SwaggerEndpoint("/swagger/v1/swagger.json", "RgPotter API V1");
+                c.RoutePrefix = "docs";
+            });
+
             app.UseRouting();
+
+            app.UseDefaultFiles();
+            app.UseStaticFiles();
 
             app.UseAuthentication();
 
