@@ -136,13 +136,10 @@ namespace RG_Potter_API
             app.UseSwaggerUI(c =>
             {
                 c.SwaggerEndpoint("/swagger/v1/swagger.json", "RgPotter API V1");
-                c.RoutePrefix = "docs";
+                c.RoutePrefix = "";
             });
 
             app.UseRouting();
-
-            app.UseDefaultFiles();
-            app.UseStaticFiles();
 
             app.UseAuthentication();
 
